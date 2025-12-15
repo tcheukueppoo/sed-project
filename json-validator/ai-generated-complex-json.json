@@ -1,0 +1,213 @@
+{
+  "meta": {
+    "id": "urn:system:root:9f3c2a7e",
+    "version": "3.14.159",
+    "generatedAt": "2025-12-15T10:42:31.902Z",
+    "environment": {
+      "name": "production",
+      "region": "eu-central-1",
+      "replicas": 7,
+      "flags": {
+        "experimental": false,
+        "hotReload": null,
+        "featureMatrix": {
+          "alpha": ["A1", "A7"],
+          "beta": [],
+          "stable": ["S1", "S2", "S9"]
+        }
+      }
+    }
+  },
+
+  "i18n": {
+    "defaultLocale": "en-US",
+    "fallbacks": ["en", "fr", "de"],
+    "strings": {
+      "en-US": {
+        "title": "Complex System",
+        "errors": {
+          "E001": "Unknown failure",
+          "E002": "Invalid transition"
+        }
+      },
+      "fr-FR": {
+        "title": "Système Complexe",
+        "errors": {
+          "E001": "Échec inconnu"
+        }
+      }
+    }
+  },
+
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+      "node": {
+        "type": "object",
+        "required": ["id", "type"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "enum": ["task", "event", "gateway"] },
+          "children": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/node" }
+          }
+        }
+      }
+    }
+  },
+
+  "graph": {
+    "nodes": [
+      {
+        "id": "n1",
+        "type": "task",
+        "state": {
+          "current": "RUNNING",
+          "history": [
+            { "state": "CREATED", "at": "2025-12-15T09:00:00Z" },
+            { "state": "QUEUED", "at": "2025-12-15T09:00:02Z" }
+          ]
+        },
+        "config": {
+          "retryPolicy": {
+            "maxRetries": 5,
+            "strategy": "exponential",
+            "backoff": [100, 300, 900, 2700]
+          },
+          "timeouts": {
+            "soft": 5000,
+            "hard": 15000
+          }
+        },
+        "children": [
+          {
+            "id": "n1.1",
+            "type": "event",
+            "payload": {
+              "headers": {
+                "traceId": "abc-123",
+                "spanId": "def-456"
+              },
+              "body": {
+                "user": {
+                  "id": 99123,
+                  "roles": ["admin", "editor"],
+                  "preferences": {
+                    "theme": "dark",
+                    "notifications": {
+                      "email": true,
+                      "sms": false,
+                      "push": {
+                        "enabled": true,
+                        "quietHours": {
+                          "from": "22:00",
+                          "to": "06:00"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+
+    "edges": [
+      {
+        "from": "n1",
+        "to": "n2",
+        "condition": {
+          "type": "expression",
+          "language": "CEL",
+          "value": "response.status == 200 && retries < 3"
+        }
+      }
+    ]
+  },
+
+  "stateMachine": {
+    "initial": "CREATED",
+    "states": {
+      "CREATED": {
+        "on": {
+          "enqueue": "QUEUED"
+        }
+      },
+      "QUEUED": {
+        "on": {
+          "start": "RUNNING"
+        }
+      },
+      "RUNNING": {
+        "on": {
+          "success": "COMPLETED",
+          "failure": "FAILED"
+        },
+        "timeout": {
+          "afterMs": 15000,
+          "transition": "FAILED"
+        }
+      },
+      "FAILED": {
+        "final": true
+      },
+      "COMPLETED": {
+        "final": true
+      }
+    }
+  },
+
+  "auditTrail": [
+    {
+      "id": "evt-001",
+      "actor": {
+        "type": "system",
+        "id": "scheduler"
+      },
+      "action": "CREATE",
+      "diff": {
+        "before": null,
+        "after": { "state": "CREATED" }
+      },
+      "timestamp": "2025-12-15T09:00:00Z"
+    },
+    {
+      "id": "evt-002",
+      "actor": {
+        "type": "user",
+        "id": 42
+      },
+      "action": "UPDATE_CONFIG",
+      "diff": {
+        "before": { "maxRetries": 3 },
+        "after": { "maxRetries": 5 }
+      },
+      "timestamp": "2025-12-15T09:01:12Z"
+    }
+  ],
+
+  "links": {
+    "self": "/api/v3/system/9f3c2a7e",
+    "metrics": "/api/v3/system/9f3c2a7e/metrics",
+    "children": [
+      "/api/v3/system/9f3c2a7e/nodes/n1"
+    ]
+  },
+
+  "integrity": {
+    "hash": {
+      "algorithm": "SHA-256",
+      "value": "b3c9f7e0c2a1d9f0aa12..."
+    },
+    "signatures": [
+      {
+        "issuer": "root-ca",
+        "validFrom": "2025-01-01T00:00:00Z",
+        "validTo": "2026-01-01T00:00:00Z"
+      }
+    ]
+  }
+}

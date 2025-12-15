@@ -1,0 +1,284 @@
+{
+  "root": {
+    "identity": {
+      "uid": "sys-84f1c9e2-acde",
+      "namespace": "urn:hyper:orchestrator",
+      "aliases": ["primary", "legacy-v2", null]
+    },
+
+    "lifecycle": {
+      "created": "2023-01-01T00:00:00Z",
+      "activated": {
+        "at": "2024-05-12T14:33:09Z",
+        "by": {
+          "type": "human",
+          "id": 7721,
+          "credentials": {
+            "method": "mfa",
+            "factors": [
+              { "type": "password", "verified": true },
+              { "type": "totp", "verified": true }
+            ]
+          }
+        }
+      },
+      "decommissioned": null
+    },
+
+    "topology": {
+      "clusters": [
+        {
+          "clusterId": "c-01",
+          "region": "us-east-1",
+          "capacity": {
+            "nodes": 12,
+            "resources": {
+              "cpu": { "total": 384, "used": 211.5 },
+              "memory": { "total": "2TiB", "used": "1.1TiB" },
+              "storage": [
+                {
+                  "class": "nvme",
+                  "volumes": [
+                    {
+                      "id": "vol-001",
+                      "metrics": {
+                        "iops": { "read": 152340, "write": 83420 },
+                        "latencyMs": {
+                          "p50": 0.7,
+                          "p95": 1.9,
+                          "p99": 4.2
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+
+          "nodes": [
+            {
+              "nodeId": "n-1",
+              "role": "control-plane",
+              "status": {
+                "current": "DEGRADED",
+                "since": "2025-11-19T04:12:00Z",
+                "reasons": [
+                  {
+                    "code": "CLOCK_SKEW",
+                    "diagnostics": {
+                      "offsetMs": 1834,
+                      "ntp": {
+                        "servers": [
+                          { "host": "time1.pool.ntp.org", "reachable": true },
+                          { "host": "time2.pool.ntp.org", "reachable": false }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    "execution": {
+      "pipelines": [
+        {
+          "pipelineId": "pipe-9a",
+          "definition": {
+            "version": "1.7.3",
+            "graph": {
+              "steps": [
+                {
+                  "id": "s1",
+                  "type": "source",
+                  "outputs": ["s2"]
+                },
+                {
+                  "id": "s2",
+                  "type": "transform",
+                  "inputs": ["s1"],
+                  "config": {
+                    "operations": [
+                      {
+                        "op": "map",
+                        "expression": "x => x.value * 1.2"
+                      },
+                      {
+                        "op": "filter",
+                        "predicate": "x => x.value > threshold"
+                      }
+                    ],
+                    "parameters": {
+                      "threshold": 10,
+                      "fallback": null
+                    }
+                  }
+                }
+              ]
+            }
+          },
+
+          "runtime": {
+            "instances": [
+              {
+                "instanceId": "run-001",
+                "stateMachine": {
+                  "current": "RUNNING",
+                  "states": {
+                    "INIT": { "on": { "start": "RUNNING" } },
+                    "RUNNING": {
+                      "on": {
+                        "success": "COMPLETED",
+                        "failure": "FAILED"
+                      },
+                      "metrics": {
+                        "throughput": {
+                          "samples": [120, 131, 129, 140],
+                          "unit": "events/s"
+                        }
+                      }
+                    },
+                    "FAILED": {
+                      "final": true,
+                      "error": {
+                        "code": "E-TRANSFORM-42",
+                        "context": {
+                          "step": "s2",
+                          "inputSample": {
+                            "raw": { "value": "NaN", "meta": { "source": "sensor-7" } },
+                            "parsed": null
+                          }
+                        }
+                      }
+                    },
+                    "COMPLETED": {
+                      "final": true,
+                      "summary": {
+                        "processed": 928341,
+                        "durationMs": 834211
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+
+    "observability": {
+      "logs": {
+        "retentionDays": 30,
+        "streams": [
+          {
+            "streamId": "stderr",
+            "shards": [
+              {
+                "shardId": "sh-1",
+                "segments": [
+                  {
+                    "segmentId": "seg-0001",
+                    "entries": [
+                      {
+                        "ts": "2025-12-14T23:59:59.999Z",
+                        "level": "ERROR",
+                        "message": "Unhandled exception",
+                        "context": {
+                          "stack": [
+                            "fnA()",
+                            "fnB()",
+                            "fnC()"
+                          ],
+                          "vars": {
+                            "x": 42,
+                            "y": null
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+
+      "tracing": {
+        "enabled": true,
+        "sampler": {
+          "type": "adaptive",
+          "rules": [
+            {
+              "when": {
+                "service": "transformer",
+                "latencyMs": { "gt": 500 }
+              },
+              "sampleRate": 1.0
+            }
+          ]
+        }
+      }
+    },
+
+    "governance": {
+      "policies": {
+        "security": {
+          "encryption": {
+            "atRest": "AES-256",
+            "inTransit": "TLS1.3"
+          },
+          "access": {
+            "model": "RBAC",
+            "roles": [
+              {
+                "name": "admin",
+                "permissions": ["*"]
+              },
+              {
+                "name": "reader",
+                "permissions": ["read:*"]
+              }
+            ]
+          }
+        }
+      },
+      "compliance": {
+        "standards": [
+          {
+            "name": "ISO-27001",
+            "status": "PASS",
+            "evidence": {
+              "auditId": "audit-2025-11",
+              "documents": []
+            }
+          }
+        ]
+      }
+    },
+
+    "analytics": {
+      "timeSeries": [
+        {
+          "metric": "cpu.utilization",
+          "labels": { "cluster": "c-01" },
+          "points": [
+            { "t": 1700000000, "v": 0.71 },
+            { "t": 1700000060, "v": 0.69 }
+          ]
+        }
+      ],
+      "aggregations": {
+        "daily": {
+          "avg": 0.68,
+          "p95": 0.82
+        }
+      }
+    }
+  }
+}
