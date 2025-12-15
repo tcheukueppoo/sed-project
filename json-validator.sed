@@ -131,7 +131,7 @@
 }
 
 :num_error {
-   s/.*/Couldn't parse number literal./q
+   s/.*/Couldn't parse number literal./p
    q
 }
 
