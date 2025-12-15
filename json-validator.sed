@@ -113,7 +113,8 @@
    /^:/ {
       s/://
       x
-      s/\({\(k:v,\)*k\)/&:/
+      s/v$/k/
+      s/\({\(k:v,\)*k\)$/&:/
       x
       t next
       b syn_error
@@ -121,7 +122,7 @@
    /^}/ {
       s/}//
       x
-      s/{\(\(k:v,\)\+\(k:v\)\|k:v\)\?/v/
+      s/{\(\(k:v,\)\+\(k:v\)\|k:v\)\?$/v/
       x
       t next
       b syn_error
@@ -131,17 +132,19 @@
 }
 
 :num_error {
-   s/\(.\{40\}\).*/Couldn't parse number literal before --> "\1"/p
+   s/\(.\{,40\}\).*/Couldn't parse number literal before --> "\1"/p
    q
 }
 
 :str_error {
-   s/\(.\{40\}\).*/Couldn't parse string literal before --> "\1"/p
+   s/\(.\{,40\}\).*/Couldn't parse string literal before --> "\1"/p
    q
 }
 
 :syn_error {
-   s/\(.\{40\}\).*/Syntax error before --> "\1"/p
+   x
+   p
+   s/\(.\{,40\}\).*/Syntax error before --> "\1"/p
    q
 }
 
@@ -152,5 +155,6 @@
       q
    }
 
+   x
    b syn_error
 }
