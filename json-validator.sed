@@ -11,15 +11,15 @@
 # Check for valid JSON signature in the hold space; die otherwise
 :sig_check {
    x
-   s/{$/{k/
+   s/{\(\(k:v,\)*\)$/{\1k/
    x
    t next
    x
-   s/{k:$/{k:v/
+   s/{\(\(k:v,\)*\)k:$/{\1k:v/
    x
    t next
    x
-   s/\[$/\[v/
+   s/\[\(\(v,\)*\)$/\[\1v/
    x
    t next
    x
@@ -48,8 +48,8 @@
    }
 
    ## Decimal
-   /^\([-+]?\) [0-9]/ {
-      s/([+-]?\ *([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE]([+-]?[0-9]+))?)//
+   /^\([-+]\?\)\ *[0-9]/ {
+      s/\([+-]\?\ *\([0-9]\+\(\.[0-9]*\)\?\|\.[0-9]\+\)\([eE]\([+-]\?[0-9]\+\)\)\?\)//
       t sig_check
       b num_error
    }
@@ -75,7 +75,7 @@
       b num_error
    }
 
-   # Parse Complex constructs
+   # Parse Complex data structure constructs
 
    ## Arrays
    /^\[/ {
@@ -102,7 +102,6 @@
       b syn_error
    }
 
-
    ## Maps
    /^{/ {
       s/{//
@@ -119,29 +118,30 @@
       t next
       b syn_error
    }
-   /}/ {
+   /^}/ {
       s/}//
       x
-      s/{\(\(k:v,\)\+\(k:v\)|k:v\)\?/v/
+      s/{\(\(k:v,\)\+\(k:v\)\|k:v\)\?/v/
       x
       t next
       b syn_error
    }
 
+   b syn_error
 }
 
 :num_error {
-   s/.*/Couldn't parse number literal./p
+   s/\(.\{40\}\).*/Couldn't parse number literal before --> "\1"/p
    q
 }
 
 :str_error {
-   s/.*/Couldn't parse string literal./p
+   s/\(.\{40\}\).*/Couldn't parse string literal before --> "\1"/p
    q
 }
 
 :syn_error {
-   s/.*/Syntax error./p
+   s/\(.\{40\}\).*/Syntax error before --> "\1"/p
    q
 }
 
